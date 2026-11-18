@@ -1,9 +1,9 @@
 {
-  "team_name": "CHANGE_ME",
-  "project_title": "CHANGE_ME",
-  "one_liner": "CHANGE_ME: one sentence about what you're building",
-  "track": "CHANGE_ME: physical-world | ai-agents | area-of-expertise",
+  "team_name": "udtaryan",
+  "project_title": "Jaisa Tha",
+  "one_liner": "A dashcam for your rental deposit: capture the flat on move-in day, and at move-out the app shows what was already there, what is normal wear and what is real damage, with a fair deduction you can send to the landlord.",
+  "track": "physical-world",
   "members": [
-    { "name": "CHANGE_ME", "github": "CHANGE_ME" }
+    { "name": "Aryan Salooja", "github": "udtaryan84" }
   ]
 }
