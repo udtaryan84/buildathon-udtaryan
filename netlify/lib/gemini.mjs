@@ -9,8 +9,8 @@ export const MODEL_ID = "gemini-3.6-flash";
 // Newest models (3.7, 3.8) were overloaded on launch day (503s and 40 s hangs), so we try a
 // proven Flash first and fall back to a fast Flash-Lite. Each entry: [model id, timeout in ms].
 export const MODEL_CHAIN = [
-  [MODEL_ID, 14000],
-  ["gemini-3.1-flash-lite", 9000]
+  ["gemini-3.1-flash-lite", 12000],
+  [MODEL_ID, 12000]
 ];
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
