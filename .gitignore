@@ -27,3 +27,6 @@ Thumbs.db
 
 # Lockfile (not counted as work)
 package-lock.json
+
+# Local Netlify folder
+.netlify
