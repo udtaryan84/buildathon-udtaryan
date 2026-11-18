@@ -4,7 +4,14 @@
 // https://aistudio.google.com/docs/models on 2026-11-18: gemini-3.8-flash is the
 // current stable Flash model and accepts image input and structured output.
 // Change it here only.
-export const MODEL_ID = "gemini-3.8-flash";
+export const MODEL_ID = "gemini-3.6-flash";
+
+// Newest models (3.7, 3.8) were overloaded on launch day (503s and 40 s hangs), so we try a
+// proven Flash first and fall back to a fast Flash-Lite. Each entry: [model id, timeout in ms].
+export const MODEL_CHAIN = [
+  [MODEL_ID, 14000],
+  ["gemini-3.1-flash-lite", 9000]
+];
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -25,7 +32,22 @@ export class ModelError extends Error {
  * plain: when true, send a minimal generationConfig (used as a fallback if the
  *        API rejects the schema or thinking settings).
  */
-export async function generateContent({ system, parts, schema, timeoutMs = 20000, plain = false, apiKey, fetchImpl }) {
+export async function generateContent(opts) {
+  let lastError;
+  for (const [model, ms] of MODEL_CHAIN) {
+    try {
+      return await generateOnce({ ...opts, model, timeoutMs: Math.min(ms, opts.timeoutMs ?? ms) });
+    } catch (e) {
+      lastError = e;
+      const retryable = e instanceof ModelError && ["timeout", "upstream", "network", "rate_limit"].includes(e.kind);
+      if (!retryable) throw e;
+      console.error(`Model ${model} failed (${e.kind}), trying the next one`);
+    }
+  }
+  throw lastError;
+}
+
+async function generateOnce({ system, parts, schema, timeoutMs = 20000, plain = false, apiKey, fetchImpl, model = MODEL_ID }) {
   const key = apiKey ?? process.env.GEMINI_API_KEY;
   if (!key) throw new ModelError("config", "server is missing GEMINI_API_KEY", 500);
   const doFetch = fetchImpl ?? globalThis.fetch;
@@ -52,7 +74,7 @@ export async function generateContent({ system, parts, schema, timeoutMs = 20000
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res;
   try {
-    res = await doFetch(`${API_BASE}/${MODEL_ID}:generateContent`, {
+    res = await doFetch(`${API_BASE}/${model}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify(body),
