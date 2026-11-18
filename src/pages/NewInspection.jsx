@@ -6,6 +6,8 @@ export default function NewInspection() {
   const [property, setProperty] = useState("");
   const [landlordName, setLandlordName] = useState("");
   const [landlordWhatsapp, setLandlordWhatsapp] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [monthlyRent, setMonthlyRent] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -15,7 +17,7 @@ export default function NewInspection() {
     setBusy(true);
     setError("");
     try {
-      const insp = await api("/inspections", { property, landlordName, landlordWhatsapp });
+      const insp = await api("/inspections", { property, landlordName, landlordWhatsapp, depositAmount, monthlyRent });
       rememberInspection({ id: insp.id, property: insp.property });
       navigate(`/i/${insp.id}`);
     } catch (err) {
@@ -54,6 +56,17 @@ export default function NewInspection() {
           </label>
         </div>
         <p className="helper" style={{ "--i": 2 }}>Ten digits is fine. We add +91 for you.</p>
+        <div className="group" style={{ "--i": 3 }}>
+          <label className="field">
+            <span>Security deposit you paid (₹)</span>
+            <input value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} inputMode="numeric" placeholder="For example 80000" />
+          </label>
+          <label className="field">
+            <span>Monthly rent (₹), optional</span>
+            <input value={monthlyRent} onChange={(e) => setMonthlyRent(e.target.value)} inputMode="numeric" placeholder="For example 40000" />
+          </label>
+        </div>
+        <p className="helper" style={{ "--i": 4 }}>Any deduction at move-out has to come out of this deposit, so we keep it with the record.</p>
         <InlineError>{error}</InlineError>
         <button type="submit" hidden />
       </form>

@@ -1486,3 +1486,12 @@ html[data-nav="back"]::view-transition-old(root) {
   inherits: true;
   initial-value: 50%;
 }
+
+/* Deposit ledger on the verdict screen */
+.ledger { display: grid; gap: 0; margin-top: 4px; }
+.ledger .row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 0.5px solid var(--hairline, rgba(128, 128, 128, 0.25)); font-size: 15px; }
+.ledger .row:first-child { border-top: 0; }
+.ledger .row b { font-weight: 600; text-align: right; }
+.ledger .minus { color: var(--red, #c4271c); }
+.ledger .total { font-size: 17px; font-weight: 600; }
+.ledger .total b { color: var(--accent, #0066cc); }

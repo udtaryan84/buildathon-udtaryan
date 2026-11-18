@@ -66,6 +66,8 @@ export function countUp(el, to, format, duration = 900) {
 export function flyInto(src, target) {
   if (!target || reduceMotion()) return;
   const r = target.getBoundingClientRect();
+  // Only fly when the spot card is on screen; otherwise skip so nothing covers the page.
+  if (r.width < 8 || r.bottom < 0 || r.top > innerHeight) return;
   const img = document.createElement("img");
   img.src = src;
   img.className = "fly";
@@ -81,7 +83,11 @@ export function flyInto(src, target) {
     ],
     { duration: SPRINGS.snappy.duration + 60, easing: SPRINGS.snappy.easing, fill: "forwards" },
   );
+  // Safety net: the full-screen photo must never stay on screen, whatever the browser does.
+  const cleanup = setTimeout(() => img.remove(), SPRINGS.snappy.duration + 600);
+  anim.oncancel = () => img.remove();
   anim.onfinish = () => {
+    clearTimeout(cleanup);
     target.animate([{ transform: "scale(0.92)" }, { transform: "scale(1)" }], { duration: SPRINGS.bouncy.duration, easing: SPRINGS.bouncy.easing });
     img.remove();
   };

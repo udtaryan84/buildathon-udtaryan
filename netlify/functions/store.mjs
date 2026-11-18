@@ -58,6 +58,8 @@ export default async (req) => {
         property: String(body.property || "My flat").slice(0, 120),
         landlordName: String(body.landlordName || "").slice(0, 80),
         landlordWhatsapp: String(body.landlordWhatsapp || "").replace(/[^\d]/g, "").slice(-10),
+        depositAmount: Math.min(Number(String(body.depositAmount || "").replace(/[^\d]/g, "")) || 0, 100000000),
+        monthlyRent: Math.min(Number(String(body.monthlyRent || "").replace(/[^\d]/g, "")) || 0, 10000000),
         createdAt: new Date().toISOString(),
         spots: [],
         ack: null,

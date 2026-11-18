@@ -97,6 +97,8 @@ function CountUp({ value }) {
 export default function Verdict({ id }) {
   const [insp, setInsp] = useState(null);
   const [claim, setClaim] = useState("");
+  const [dues, setDues] = useState("");
+  const [depositText, setDepositText] = useState(null);
   const [error, setError] = useState("");
 
   const load = () => api(`/inspections/${id}`).then(setInsp).catch((e) => setError(e.message));
@@ -112,26 +114,38 @@ export default function Verdict({ id }) {
   const damage = all.filter((c) => c.category === "damage");
   const fairMin = damage.reduce((n, c) => n + (c.cost_min_inr || 0), 0);
   const fairMax = damage.reduce((n, c) => n + (c.cost_max_inr || 0), 0);
-  const claimNum = Number(String(claim).replace(/[^\d]/g, "")) || 0;
-  const over = claimNum > fairMax ? claimNum - fairMax : 0;
+  const num = (v) => Number(String(v).replace(/[^\d]/g, "")) || 0;
+  const claimNum = num(claim);
+  const deposit = num(depositText !== null ? depositText : insp.depositAmount || 0);
+  const duesNum = num(dues);
+  // Deductions that are fair: damage found in the photos, plus any rent or bills still unpaid.
+  const totalMin = fairMin + duesNum;
+  const totalMax = fairMax + duesNum;
+  const refundHigh = Math.max(0, deposit - totalMin);
+  const refundLow = Math.max(0, deposit - totalMax);
+  const over = claimNum > totalMax ? claimNum - totalMax : 0;
   const counts = {
     pre_existing: all.filter((c) => c.category === "pre_existing").length,
     normal_wear: all.filter((c) => c.category === "normal_wear").length,
     damage: damage.length,
   };
-  const scale = Math.max(claimNum, fairMax, 1);
+  const scale = Math.max(claimNum, totalMax, 1);
 
   const hello = insp.landlordName ? `Namaste ${insp.landlordName}` : "Namaste";
   const damageLines = damage.length
     ? damage.map((c) => `${c.spot}: ${c.description} (${rupees(c.cost_min_inr)} se ${rupees(c.cost_max_inr)})`).join("; ")
     : "koi naya damage nahi mila";
   const claimLine = claimNum ? ` Aapne ${rupees(claimNum)} ki deduction bataayi.` : "";
+  const depositLine = deposit
+    ? ` Security deposit ${rupees(deposit)} tha, to report ke hisaab se ${rupees(refundLow)} se ${rupees(refundHigh)} wapas banta hai.`
+    : "";
+  const duesLine = duesNum ? ` Isme ${rupees(duesNum)} pending rent ya bills bhi joda hai.` : "";
   const text =
     `${hello}, move-out par maine ${insp.property} ki condition move-in ki photos se match ki.` +
     ` Move-in report${insp.ack ? ` (aapne ${when(insp.ack.ts)} par acknowledge ki thi)` : ""}: ${location.origin}/r/${id}.` +
     ` Naya damage: ${damageLines}. Baaki sab pehle se tha ya normal wear hai.` +
-    `${claimLine} Report ke hisaab se fair deduction ${rupees(fairMin)} se ${rupees(fairMax)} banta hai.` +
-    ` Please baaki deposit wapas kar dein. Dhanyavaad!`;
+    `${claimLine} Report ke hisaab se fair deduction ${rupees(totalMin)} se ${rupees(totalMax)} banta hai.${duesLine}` +
+    `${depositLine} Please baaki deposit wapas kar dein. Dhanyavaad!`;
 
   if (checked.length === 0) {
     return (
@@ -168,13 +182,13 @@ export default function Verdict({ id }) {
       <section className="verdict-hero">
         <div className="label">Fair deduction for {insp.property}</div>
         <div className="big-number num" aria-live="polite">
-          {fairMin === fairMax ? (
-            <CountUp value={fairMax} />
+          {totalMin === totalMax ? (
+            <CountUp value={totalMax} />
           ) : (
             <>
-              <CountUp value={fairMin} />
+              <CountUp value={totalMin} />
               <span className="to">to</span>
-              <CountUp value={fairMax} />
+              <CountUp value={totalMax} />
             </>
           )}
         </div>
@@ -195,6 +209,47 @@ export default function Verdict({ id }) {
       </section>
 
       <section className="claim">
+        <h2 className="section-title" style={{ marginTop: 0 }}>Where the deduction comes from</h2>
+        <div className="group">
+          <label className="field">
+            <span>Security deposit you paid</span>
+            <input
+              value={depositText !== null ? depositText : insp.depositAmount || ""}
+              onChange={(e) => setDepositText(e.target.value)}
+              inputMode="numeric"
+              placeholder="For example 80000"
+              aria-label="Security deposit in rupees"
+            />
+          </label>
+          <label className="field">
+            <span>Unpaid rent or bills, if any</span>
+            <input value={dues} onChange={(e) => setDues(e.target.value)} inputMode="numeric" placeholder="0" aria-label="Unpaid rent or bills in rupees" />
+          </label>
+          <div className="ledger">
+            <div className="row">
+              <span>Deposit held by landlord</span>
+              <b className="num">{rupees(deposit)}</b>
+            </div>
+            <div className="row">
+              <span>Damage found in the photos</span>
+              <b className="num minus">{fairMin === fairMax ? `− ${rupees(fairMax)}` : `− ${rupees(fairMin)} to ${rupees(fairMax)}`}</b>
+            </div>
+            {duesNum > 0 && (
+              <div className="row">
+                <span>Unpaid rent or bills</span>
+                <b className="num minus">− {rupees(duesNum)}</b>
+              </div>
+            )}
+            <div className="row total">
+              <span>You should get back</span>
+              <b className="num">{refundLow === refundHigh ? rupees(refundHigh) : `${rupees(refundLow)} to ${rupees(refundHigh)}`}</b>
+            </div>
+          </div>
+          {deposit === 0 && <p className="helper">Add your deposit amount to see what comes back to you.</p>}
+        </div>
+      </section>
+
+      <section className="claim">
         <div className="group">
           <label className="field">
             <span>What did the landlord claim?</span>
@@ -210,11 +265,11 @@ export default function Verdict({ id }) {
             <div className="compare">
               <div className="compare-bar" aria-hidden="true">
                 <div className={`claimed ${over > 0 ? "" : "ok"}`} style={{ transform: `scaleX(${claimNum / scale})` }} />
-                <div className="fair" style={{ transform: `scaleX(${fairMax / scale})` }} />
+                <div className="fair" style={{ transform: `scaleX(${totalMax / scale})` }} />
               </div>
               <div className="compare-legend">
                 <span>
-                  Photos support <b className="num">{rupees(fairMax)}</b>
+                  Photos support <b className="num">{rupees(totalMax)}</b>
                 </span>
                 <span>
                   Claim <b className="num">{rupees(claimNum)}</b>

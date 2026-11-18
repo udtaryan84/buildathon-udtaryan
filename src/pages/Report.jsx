@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Btn, ErrorState, Icon, InlineError, Loading, PhotoThumb, Shell, humanError } from "../components/Bits.jsx";
-import { api, formatCode, navigate, rememberInspection, when, whatsappLink } from "../lib/api.js";
+import { api, formatCode, navigate, rememberInspection, rupees, when, whatsappLink } from "../lib/api.js";
 import { haptic } from "../lib/motion.js";
 
 // Move-in report, shown as a sealed document. The same link is opened by the landlord, who taps
@@ -99,6 +99,7 @@ export default function Report({ id }) {
         <h1 style={{ "--i": 1 }}>{insp.property}</h1>
         <p className="caption" style={{ "--i": 2 }}>
           Move-in report. Created {when(insp.createdAt)}. {insp.spots.length} spot{insp.spots.length === 1 ? "" : "s"} recorded.
+          {insp.depositAmount > 0 && <> Security deposit: <b>{rupees(insp.depositAmount)}</b>.</>}
         </p>
         <div className="code-row" style={{ "--i": 3 }}>
           <div>
