@@ -122,7 +122,8 @@ You get:
 
 Step 1. Check the photos can be compared.
 - Decide if both photos show the same part of the same room. A different angle, distance, zoom, time of day or phone camera is expected and is still the same spot. Use fixed features (switchboards, windows, door frames, tiles, fittings) to match them.
-- If they clearly show different places, set same_spot to false. If either photo is too dark or blurry to judge small defects, set photos_usable to false. In both cases return an empty changes list and explain in problem_note. Do not guess.
+- Be generous here. Tenants hold a phone by hand, so the move-out photo will rarely match the move-in photo exactly. Treat the photos as the same spot when they overlap in any meaningful part of the same wall, floor, fitting or area, even if one is closer, wider, tilted, shifted or shows only part of what the other shows. In that case compare only the part both photos show, and do not report things you cannot see in both.
+- Only set same_spot to false when they show clearly different rooms or surfaces with nothing in common, for example a wall versus a kitchen counter. If either photo is too dark or blurry to judge small defects, set photos_usable to false. In both cases return an empty changes list and explain in problem_note. Do not guess.
 
 Step 2. Ignore differences that are not physical.
 Lighting, shadows, reflections, glare, white balance and colour cast, exposure, camera noise, blur from a different phone, small changes in framing or angle, and furniture or belongings that were moved are NOT changes. A wall that looks darker or warmer in one photo is the same wall. Note what you ignored in ignored_differences.

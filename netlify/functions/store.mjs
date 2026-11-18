@@ -1,6 +1,7 @@
 // Storage for Jaisa Tha: inspections, photos and acknowledgements in Netlify Blobs.
 // One function, small router. All timestamps are server time so they cannot be edited by the phone.
 import { getStore } from "@netlify/blobs";
+import { createHash } from "node:crypto";
 
 export const config = {
   path: ["/api/inspections", "/api/inspections/*", "/api/photos/*"],
@@ -13,6 +14,21 @@ const json = (body, status = 200) =>
   });
 
 const newId = () => crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+
+// The server fingerprints every photo itself, so the phone cannot fake a hash.
+const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
+
+// A seal covers every move-in photo hash, its server timestamp and the landlord acknowledgement.
+// It is recomputed on every read, so anyone can check years later that nothing was edited.
+function withSeal(inspection) {
+  const body = JSON.stringify({
+    id: inspection.id,
+    createdAt: inspection.createdAt,
+    spots: inspection.spots.map((s) => [s.id, s.name, s.hashIn, s.tsIn]),
+    ack: inspection.ack,
+  });
+  return { ...inspection, seal: sha256(Buffer.from(body)) };
+}
 
 export default async (req) => {
   const store = getStore({ name: "jaisa-tha", consistency: "strong" });
@@ -55,18 +71,19 @@ export default async (req) => {
     if (!inspection) return json({ error: "Inspection not found" }, 404);
 
     // GET /api/inspections/:id
-    if (parts.length === 2 && method === "GET") return json(inspection);
+    if (parts.length === 2 && method === "GET") return json(withSeal(inspection));
 
     // POST /api/inspections/:id/spots  (move-in photo for one spot)
     if (parts[2] === "spots" && parts.length === 3 && method === "POST") {
       const body = await req.json();
       if (!body.imageBase64) return json({ error: "Photo missing" }, 400);
       const spotId = newId();
-      await store.set(`photo/${id}/${spotId}/in`, Buffer.from(body.imageBase64, "base64"));
+      const bytes = Buffer.from(body.imageBase64, "base64");
+      await store.set(`photo/${id}/${spotId}/in`, bytes);
       const spot = {
         id: spotId,
         name: String(body.name || "Spot").slice(0, 80),
-        hashIn: String(body.hash || ""),
+        hashIn: sha256(bytes),
         tsIn: new Date().toISOString(),
         issues: Array.isArray(body.issues) ? body.issues.slice(0, 12) : [],
         out: null,
@@ -82,9 +99,10 @@ export default async (req) => {
       if (!spot) return json({ error: "Spot not found" }, 404);
       const body = await req.json();
       if (!body.imageBase64) return json({ error: "Photo missing" }, 400);
-      await store.set(`photo/${id}/${spot.id}/out`, Buffer.from(body.imageBase64, "base64"));
+      const outBytes = Buffer.from(body.imageBase64, "base64");
+      await store.set(`photo/${id}/${spot.id}/out`, outBytes);
       spot.out = {
-        hash: String(body.hash || ""),
+        hash: sha256(outBytes),
         ts: new Date().toISOString(),
         changes: Array.isArray(body.changes) ? body.changes : [],
         summary: String(body.summary || ""),
