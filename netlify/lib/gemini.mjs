@@ -4,13 +4,13 @@
 // https://aistudio.google.com/docs/models on 2026-11-18: gemini-3.8-flash is the
 // current stable Flash model and accepts image input and structured output.
 // Change it here only.
-export const MODEL_ID = "gemini-3.6-flash";
+export const MODEL_ID = "gemini-3.1-flash-lite";
 
 // Newest models (3.7, 3.8) were overloaded on launch day (503s and 40 s hangs), so we try a
 // proven Flash first and fall back to a fast Flash-Lite. Each entry: [model id, timeout in ms].
 export const MODEL_CHAIN = [
-  ["gemini-3.1-flash-lite", 12000],
-  [MODEL_ID, 12000]
+  [MODEL_ID, 12000],
+  ["gemini-3.6-flash", 12000]
 ];
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";

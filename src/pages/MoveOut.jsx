@@ -27,11 +27,18 @@ export default function MoveOut({ id }) {
     setError("");
     try {
       const moveInBase64 = await urlToBase64(`/api/photos/${id}/${spot.id}/in`);
-      const result = await api("/compare", {
+      const payload = {
         spotName: spot.name,
         moveIn: { imageBase64: moveInBase64, mimeType: "image/jpeg", issues: spot.issues },
         moveOut: { imageBase64: photo.base64, mimeType: photo.mimeType },
-      });
+      };
+      let result;
+      try {
+        result = await api("/compare", payload);
+      } catch {
+        // One automatic retry: the AI service is sometimes busy for a few seconds.
+        result = await api("/compare", payload);
+      }
       await api(`/inspections/${id}/spots/${spot.id}/out`, {
         imageBase64: photo.base64,
         hash: photo.hash,
