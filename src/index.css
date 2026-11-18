@@ -1495,3 +1495,12 @@ html[data-nav="back"]::view-transition-old(root) {
 .ledger .minus { color: var(--red, #c4271c); }
 .ledger .total { font-size: 17px; font-weight: 600; }
 .ledger .total b { color: var(--accent, #0066cc); }
+
+/* Laptop: use the room, two spot cards side by side, still one clean column of content */
+@media (min-width: 900px) {
+  .page { max-width: 820px; }
+  .spots { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .spots > * { margin: 0; }
+  .verdict-hero .big-number { font-size: clamp(56px, 7vw, 80px); }
+  .actionbar-inner { max-width: 440px; margin: 0 auto; }
+}
