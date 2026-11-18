@@ -1,5 +1,7 @@
 // Small helpers: API calls, image processing, navigation, WhatsApp links.
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
+import { reduceMotion } from "./motion.js";
 
 export async function api(path, body) {
   const res = await fetch("/api" + path, {
@@ -45,25 +47,47 @@ export async function urlToBase64(url) {
   });
 }
 
+// Screen depth decides whether a navigation pushes forward or pops back (iOS style).
+const DEPTH = { "": 0, new: 1, i: 2, r: 3, m: 4, v: 5 };
+const depthOf = (p) => DEPTH[p.split("/")[1] || ""] ?? 0;
+
+function withTransition(update, direction) {
+  if (!document.startViewTransition || reduceMotion()) return update();
+  document.documentElement.dataset.nav = direction;
+  const t = document.startViewTransition(() => flushSync(update));
+  t.finished.finally(() => delete document.documentElement.dataset.nav);
+}
+
 export function navigate(path) {
-  history.pushState({}, "", path);
-  window.dispatchEvent(new Event("navchange"));
-  window.scrollTo(0, 0);
+  const direction = depthOf(path) >= depthOf(location.pathname) ? "forward" : "back";
+  withTransition(() => {
+    history.pushState({}, "", path);
+    window.dispatchEvent(new Event("navchange"));
+    window.scrollTo(0, 0);
+  }, direction);
 }
 
 export function usePath() {
   const [path, setPath] = useState(location.pathname);
   useEffect(() => {
     const update = () => setPath(location.pathname);
-    window.addEventListener("popstate", update);
+    const pop = () => {
+      const direction = depthOf(location.pathname) >= depthOf(path) ? "forward" : "back";
+      withTransition(update, direction);
+    };
+    window.addEventListener("popstate", pop);
     window.addEventListener("navchange", update);
     return () => {
-      window.removeEventListener("popstate", update);
+      window.removeEventListener("popstate", pop);
       window.removeEventListener("navchange", update);
     };
-  }, []);
+  }, [path]);
   return path;
 }
+
+// The inspection code people can read out or type: D7F0-E579-B9.
+export const formatCode = (id) => String(id || "").toUpperCase().match(/.{1,4}/g)?.join("-") || "";
+export const parseCode = (text) => String(text || "").replace(/[\s-]/g, "").toLowerCase();
 
 export const rupees = (n) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 

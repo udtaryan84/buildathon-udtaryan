@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shell } from "../components/Bits.jsx";
+import { Btn, InlineError, Shell, humanError } from "../components/Bits.jsx";
 import { api, navigate, rememberInspection } from "../lib/api.js";
 
 export default function NewInspection() {
@@ -10,7 +10,8 @@ export default function NewInspection() {
   const [error, setError] = useState("");
 
   async function submit(e) {
-    e.preventDefault();
+    e?.preventDefault();
+    if (!property.trim()) return setError("Please add the flat or PG name.");
     setBusy(true);
     setError("");
     try {
@@ -18,36 +19,43 @@ export default function NewInspection() {
       rememberInspection({ id: insp.id, property: insp.property });
       navigate(`/i/${insp.id}`);
     } catch (err) {
-      setError(err.message);
+      setError(humanError(err.message));
       setBusy(false);
     }
   }
 
   return (
-    <Shell back="/">
-      <h1 className="h1s">New move-in</h1>
-      <form onSubmit={submit} className="form">
-        <label>
-          Flat or PG name
-          <input value={property} onChange={(e) => setProperty(e.target.value)} placeholder="2BHK, Sector 62, Gurugram" required />
-        </label>
-        <label>
-          Landlord name
-          <input value={landlordName} onChange={(e) => setLandlordName(e.target.value)} placeholder="Mr. Sharma" />
-        </label>
-        <label>
-          Landlord WhatsApp number
-          <input
-            value={landlordWhatsapp}
-            onChange={(e) => setLandlordWhatsapp(e.target.value)}
-            inputMode="tel"
-            placeholder="98XXXXXXXX"
-          />
-        </label>
-        {error && <p className="error">{error}</p>}
-        <button className="primary big" disabled={busy}>
+    <Shell
+      back="/"
+      backLabel="Home"
+      actions={
+        <Btn className="block" disabled={busy || !property.trim()} onClick={submit}>
           {busy ? "Creating" : "Continue to photos"}
-        </button>
+        </Btn>
+      }
+    >
+      <h1 className="large-title">New move-in</h1>
+      <p className="subtitle">Who is this flat with? We use the number only to open WhatsApp for you.</p>
+      <form onSubmit={submit} className="stagger">
+        <div className="group" style={{ "--i": 0 }}>
+          <label className="field">
+            <span>Flat or PG name</span>
+            <input value={property} onChange={(e) => setProperty(e.target.value)} placeholder="2BHK, Sector 62, Gurugram" required autoFocus />
+          </label>
+        </div>
+        <div className="group" style={{ "--i": 1 }}>
+          <label className="field">
+            <span>Landlord name</span>
+            <input value={landlordName} onChange={(e) => setLandlordName(e.target.value)} placeholder="Mr. Sharma" />
+          </label>
+          <label className="field">
+            <span>Landlord WhatsApp number</span>
+            <input value={landlordWhatsapp} onChange={(e) => setLandlordWhatsapp(e.target.value)} inputMode="tel" placeholder="98XXXXXXXX" />
+          </label>
+        </div>
+        <p className="helper" style={{ "--i": 2 }}>Ten digits is fine. We add +91 for you.</p>
+        <InlineError>{error}</InlineError>
+        <button type="submit" hidden />
       </form>
     </Shell>
   );
